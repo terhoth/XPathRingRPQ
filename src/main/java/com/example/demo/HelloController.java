@@ -71,7 +71,7 @@ public class HelloController {
 
 			StringBuilder sb = new StringBuilder();
 
-			XPathCypherListener mylistener = new XPathCypherListener();
+			XPathRingListener mylistener = new XPathRingListener();
 			parser.addParseListener(mylistener);
             ParseTree tree = parser.main();    // begin parsing at rule main
             
@@ -112,7 +112,7 @@ public class HelloController {
 			StringBuilder sb = new StringBuilder();
             String cypQ = "";
 
-				XPathCypherListener mylistener = new XPathCypherListener();
+				XPathRingListener mylistener = new XPathRingListener();
 				parser.addParseListener(mylistener);
                 ParseTree tree = parser.main();    // begin parsing at rule main
             
