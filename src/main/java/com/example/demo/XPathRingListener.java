@@ -18,9 +18,11 @@ public class XPathRingListener extends xpathBaseListener {
     private String nCName;
 
     private boolean firstStep = true;
+    private boolean deletedStep = false;
 
     private boolean insideAttributeTest = false;
     private Object attributeValue;
+
 
     private Output output = new Output();
 
@@ -70,16 +72,37 @@ public class XPathRingListener extends xpathBaseListener {
 
     @Override
     public void exitPrimaryExpr(xpathParser.PrimaryExprContext ctx) {
+	System.out.println("exitPrimaryExpr");
     	//Checking if the child node is leaf node
     	if (ctx.getChild(0).getChild(0) == null) {
     		this.attributeValue = ctx.getChild(0);
     	}
+	System.out.println(this.queryStack.peek());
     }
 
     @Override
     public void enterRelativeLocationPath(xpathParser.RelativeLocationPathContext ctx) {
 	System.out.println("enterRelativeLocationPath");
 	this.firstStep = true;
+	System.out.println(this.queryStack.peek());
+    }
+
+    @Override
+    public void exitRelativeLocationPath(xpathParser.RelativeLocationPathContext ctx) {
+	System.out.println("exitRelativeLocationPath");
+	if (this.queryStack.size() == 1) {
+	    // this is the end of the main query
+	    int n_of_steps = (ctx.getChildCount() + 1) / 2;
+	    if (n_of_steps % 2 == 0 || this.deletedStep) {
+		// no vertex endpoint specified
+		this.queryStack.peek().append(" ?y");
+	    } else {
+		// put a space before the last vertex, and remove ¤
+		int i = this.queryStack.peek().lastIndexOf("/<¤");
+		this.queryStack.peek().delete(i, i+3);
+		this.queryStack.peek().insert(i, " <");
+	    }
+	}
 	System.out.println(this.queryStack.peek());
     }
 
@@ -133,9 +156,10 @@ public class XPathRingListener extends xpathBaseListener {
     @Override
     public void enterStep(xpathParser.StepContext ctx) {
 	System.out.println("enterStep");
-	if (!this.firstStep) {
+	if (!this.firstStep && this.queryStack.peek().charAt(this.queryStack.peek().length()-1) != ' ') {
 	    this.queryStack.peek().append("/");
 	}
+	this.deletedStep = false;
 	System.out.println(this.queryStack.peek());
     }
 
@@ -144,19 +168,39 @@ public class XPathRingListener extends xpathBaseListener {
 	System.out.println("exitStep");
 	this.queryStack.peek().append(this.endEdge.peek());
 	
-	// remove the step if it was just a nameless vertex
-	String uselessStep = "/" + this.startEdge.peek() + "¤" + this.endEdge.peek();
-	int i = this.queryStack.peek().indexOf(uselessStep);
-	if (i != -1) {
-	    this.queryStack.peek().delete(i, this.queryStack.peek().length());
-	}
-	// warn of nameless edges
-	uselessStep = "/" + this.startEdge.peek() + this.endEdge.peek();
-	i = this.queryStack.peek().indexOf(uselessStep);
-	if (i != -1) {
-	    String warnMessage = "Nameless edges can be costly in evaluation. Besides, they have not been implemented yet!";
-    	    String details = uselessStep;
-    	    output.printWarning(warnMessage, details);
+	if (firstStep && this.queryStack.size() == 1) {
+	    // this is the very first vertex of the main query
+	    if (this.axis.peek() != "child")  {
+	        String warnMessage = "The first step should contain only a vertex name (or wildcard vertex)";
+    	        String details = this.queryStack.peek().toString();
+    	        output.printWarning(warnMessage, details);
+	    }
+	    if (this.queryStack.peek().toString().equals("<¤>")) {
+		// replace unspecified start vertex with variable
+		this.queryStack.pop();
+	        this.queryStack.push(new StringBuilder("?x"));
+	    } else {
+		// remove ¤ from constant start vertex
+		this.queryStack.peek().deleteCharAt(1); 
+	    }
+	    this.queryStack.peek().append(" ");
+
+	} else {
+	    // remove the step if it was just a nameless vertex
+	    String uselessStep = "/" + this.startEdge.peek() + "¤" + this.endEdge.peek();
+	    int i = this.queryStack.peek().indexOf(uselessStep);
+	    if (i != -1) {
+	        this.queryStack.peek().delete(i, this.queryStack.peek().length());
+		this.deletedStep = true;
+	    }
+	    // warn of nameless edges
+	    uselessStep = "/" + this.startEdge.peek() + this.endEdge.peek();
+	    i = this.queryStack.peek().indexOf(uselessStep);
+	    if (i != -1) {
+	        String warnMessage = "Nameless edges can be costly in evaluation. Besides, they have not been implemented yet!";
+    	        String details = uselessStep;
+    	        output.printWarning(warnMessage, details);
+	    }
 	}
 
 	this.axis.pop();
