@@ -13,12 +13,15 @@ public class XPathRingListener extends xpathBaseListener {
     private boolean firstStep = true;
 
     private Stack<StringBuilder> queryStack = new Stack<StringBuilder>();
+
     private Stack<String> axis = new Stack<String>();
     private Stack<String> startEdge = new Stack<String>();
     private Stack<String> endEdge = new Stack<String>();
 
     private boolean insideAttributeTest = false;
     private Object attributeValue;
+
+    private String nCName;
 
 
     public void setQuery(Object s) {
@@ -148,9 +151,31 @@ public class XPathRingListener extends xpathBaseListener {
     }
 
     @Override
+    public void enterNameTest(xpathParser.NameTestContext ctx) {
+	System.out.println("enterNameTest");
+	this.nCName = "";
+	System.out.println(this.queryStack.peek());
+    }
+
+    @Override
+    public void exitNameTest(xpathParser.NameTestContext ctx) {
+	System.out.println("exitNameTest");
+	int n_of_steps = (ctx.parent.parent.parent.getChildCount() + 1) / 2;
+	// main query begins with a vertex, predicates with an edge
+	if ((this.queryStack.size() == 1 && n_of_steps % 2 == 1) ||
+	    (this.queryStack.size() >  1 && n_of_steps % 2 == 0))
+	{
+	    this.queryStack.peek().append('¤');
+	}
+	this.queryStack.peek().append(this.nCName);
+	System.out.println(this.queryStack.peek());
+    }
+
+    @Override
     public void exitNCName(xpathParser.NCNameContext ctx) {
-	System.out.println("exitNCName");
-	this.queryStack.peek().append(ctx.getChild(0));
+	System.out.println("exitNameTest");
+	StringBuilder sb = new StringBuilder();
+    	this.nCName = sb.append(ctx.getChild(0)).toString();	
 	System.out.println(this.queryStack.peek());
     }
 
