@@ -9,20 +9,20 @@ import java.util.Stack;
 public class XPathRingListener extends xpathBaseListener {
 
     private StringBuilder query = new StringBuilder();
-
-    private boolean firstStep = true;
-
     private Stack<StringBuilder> queryStack = new Stack<StringBuilder>();
 
     private Stack<String> axis = new Stack<String>();
     private Stack<String> startEdge = new Stack<String>();
     private Stack<String> endEdge = new Stack<String>();
 
+    private String nCName;
+
+    private boolean firstStep = true;
+
     private boolean insideAttributeTest = false;
     private Object attributeValue;
 
-    private String nCName;
-
+    private Output output = new Output();
 
     public void setQuery(Object s) {
     	this.query.append(s);
@@ -95,7 +95,7 @@ public class XPathRingListener extends xpathBaseListener {
     		this.endEdge.push(">");
     	} else if (sb.toString().equals("ancestor")) {
     		this.startEdge.push("(<%");
-    		this.endEdge.push(")+");
+    		this.endEdge.push(">)+");
     		this.axis.push("ancestor");
     	} else if (sb.toString().equals("child")) {
     		this.startEdge.push("<");
@@ -143,6 +143,22 @@ public class XPathRingListener extends xpathBaseListener {
     public void exitStep(xpathParser.StepContext ctx) {
 	System.out.println("exitStep");
 	this.queryStack.peek().append(this.endEdge.peek());
+	
+	// remove the step if it was just a nameless vertex
+	String uselessStep = "/" + this.startEdge.peek() + "¤" + this.endEdge.peek();
+	int i = this.queryStack.peek().indexOf(uselessStep);
+	if (i != -1) {
+	    this.queryStack.peek().delete(i, this.queryStack.peek().length());
+	}
+	// warn of nameless edges
+	uselessStep = "/" + this.startEdge.peek() + this.endEdge.peek();
+	i = this.queryStack.peek().indexOf(uselessStep);
+	if (i != -1) {
+	    String warnMessage = "Nameless edges can be costly in evaluation. Besides, they have not been implemented yet!";
+    	    String details = uselessStep;
+    	    output.printWarning(warnMessage, details);
+	}
+
 	this.axis.pop();
 	this.startEdge.pop();
 	this.endEdge.pop();
