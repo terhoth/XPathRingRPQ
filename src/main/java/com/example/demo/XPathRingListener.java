@@ -11,12 +11,11 @@ public class XPathRingListener extends xpathBaseListener {
     private StringBuilder query = new StringBuilder();
 
     private boolean firstStep = true;
-    private boolean insidePredicate = false;
-    private boolean isAttributeTest = false;
 
-    private String axis = "";
-    private String startEdge;
-    private String endEdge;
+    private Stack<StringBuilder> queryStack = new Stack<StringBuilder>();
+    private Stack<String> axis = new Stack<String>();
+    private Stack<String> startEdge = new Stack<String>();
+    private Stack<String> endEdge = new Stack<String>();
 
 
     public void setQuery(Object s) {
@@ -24,12 +23,18 @@ public class XPathRingListener extends xpathBaseListener {
     }
 
     public Object getQuery() {
-    	return query;
+    	return this.query;
+    }
+
+    @Override
+    public void enterMain(xpathParser.MainContext ctx) {
+	this.queryStack.push(query);    
     }
 
     @Override
     public void exitMain(xpathParser.MainContext ctx) {
     	System.out.println("Ring query");
+	this.query = this.queryStack.pop();
     	System.out.println(this.query);
     	System.out.println();
     	System.out.println("Translation done");
@@ -39,7 +44,7 @@ public class XPathRingListener extends xpathBaseListener {
     public void enterRelativeLocationPath(xpathParser.RelativeLocationPathContext ctx) {
 	System.out.println("enterRelativeLocationPath");
 	this.firstStep = true;
-	System.out.println(this.query);
+	System.out.println(this.queryStack.peek());
     }
 
     @Override
@@ -49,96 +54,95 @@ public class XPathRingListener extends xpathBaseListener {
     	sb.append(ctx.getChild(0));
 
     	if (sb.toString().equals("parent")) {
-    		this.axis = "parent";
-    		this.startEdge = "<%";
-    		this.endEdge = ">";
+    		this.axis.push("parent");
+    		this.startEdge.push("<%");
+    		this.endEdge.push(">");
     	} else if (sb.toString().equals("ancestor")) {
-    		this.startEdge = "(<%";
-    		this.endEdge = ")+";
-    		this.axis = "ancestor";
+    		this.startEdge.push("(<%");
+    		this.endEdge.push(")+");
+    		this.axis.push("ancestor");
     	} else if (sb.toString().equals("child")) {
-    		this.startEdge = "<";
-    		this.endEdge = ">";
-    		this.axis = "child";
+    		this.startEdge.push("<");
+    		this.endEdge.push(">");
+    		this.axis.push("child");
     	} else if (sb.toString().equals("descendant")) {
-    		this.startEdge = "(<";
-    		this.endEdge = ">)+";
-    		this.axis = "descendant";
+    		this.startEdge.push("(<");
+    		this.endEdge.push(">)+");
+    		this.axis.push("descendant");
     	} else if (sb.toString().equals("ancestor-or-self")) {
-    		this.startEdge = "(<%";
-    		this.endEdge = ">)*";
-    		this.axis = "ancestor-or-self";
+    		this.startEdge.push("(<%");
+    		this.endEdge.push(">)*");
+    		this.axis.push("ancestor-or-self");
     	} else if (sb.toString().equals("descendant-or-self")) {
-    		this.startEdge = "(<";
-    		this.endEdge = ">)*";
-    		this.axis = "descendant-or-self";
+    		this.startEdge.push("(<");
+    		this.endEdge.push(">)*");
+    		this.axis.push("descendant-or-self");
     	} else if (sb.toString().equals("attribute") || sb.toString().equals("@")) {
-    		this.startEdge = "";
-    		this.endEdge = "";
-    		this.axis = "attribute";
-		this.isAttributeTest = true;
+    		this.startEdge.push("@");
+    		this.endEdge.push("");
+    		this.axis.push("attribute");
     	} else if (sb.toString() == null || !sb.toString().isEmpty()) {
-    		this.startEdge = "<";
-    		this.endEdge = ">";
-    		this.axis = "child";
+    		this.startEdge.push("<");
+    		this.endEdge.push(">");
+    		this.axis.push("child");
     	} else {
     		throw new IllegalArgumentException("Unknown axis " + sb.toString());
     	}
 
-	if (this.insidePredicate && this.firstStep) {
-	    if (this.isAttributeTest) {
-		this.query.append("[");
-	    } else {
-		this.query.append("{");
-	    }
-	}
-	query.append(this.startEdge);
-	System.out.println(this.query);
+	this.queryStack.peek().append(this.startEdge.peek());
+	System.out.println(this.queryStack.peek());
     }
 
     @Override
     public void enterStep(xpathParser.StepContext ctx) {
 	System.out.println("enterStep");
 	if (!this.firstStep) {
-	    this.query.append("/");
+	    this.queryStack.peek().append("/");
 	}
-	System.out.println(this.query);
+	System.out.println(this.queryStack.peek());
     }
 
     @Override
     public void exitStep(xpathParser.StepContext ctx) {
 	System.out.println("exitStep");
-	this.query.append(this.endEdge);
+	this.queryStack.peek().append(this.endEdge.peek());
+	this.axis.pop();
+	this.startEdge.pop();
+	this.endEdge.pop();
 	this.firstStep = false;
-	System.out.println(this.query);
+	System.out.println(this.queryStack.peek());
     }
 
     @Override
     public void exitNCName(xpathParser.NCNameContext ctx) {
 	System.out.println("exitNCName");
-	this.query.append(ctx.getChild(0));
-	System.out.println(this.query);
+	this.queryStack.peek().append(ctx.getChild(0));
+	System.out.println(this.queryStack.peek());
     }
 
     @Override
     public void enterPredicate(xpathParser.PredicateContext ctx) {
 	System.out.println("enterPredicate");
-	this.insidePredicate = true;
-	this.isAttributeTest = false;
 	this.firstStep = true;
-	System.out.println(this.query);
+	this.queryStack.push(new StringBuilder());
+	System.out.println(this.queryStack.peek());
     }
 
     @Override
     public void exitPredicate(xpathParser.PredicateContext ctx) {
 	System.out.println("exitPredicate");
-	this.insidePredicate = false;
-	if (this.isAttributeTest) {
-	    this.query.append("]");
+	StringBuilder predicate = this.queryStack.pop();
+	if (predicate.charAt(0) == '@') {
+	    //predicate.delete(0, 1);
+	    this.queryStack.peek().append("[");
+	    this.queryStack.peek().append(predicate.toString());
+	    this.queryStack.peek().append("]");
 	} else {
-	    this.query.append("}");
+	    this.queryStack.peek().append("{");
+	    this.queryStack.peek().append(predicate.toString());
+	    this.queryStack.peek().append("}");
 	}
-	System.out.println(this.query);
+	System.out.println(this.queryStack.peek());
     }
 
 }
