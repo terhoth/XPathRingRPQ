@@ -17,6 +17,9 @@ public class XPathRingListener extends xpathBaseListener {
     private Stack<String> startEdge = new Stack<String>();
     private Stack<String> endEdge = new Stack<String>();
 
+    private boolean insideAttributeTest = false;
+    private Object attributeValue;
+
 
     public void setQuery(Object s) {
     	this.query.append(s);
@@ -38,6 +41,36 @@ public class XPathRingListener extends xpathBaseListener {
     	System.out.println(this.query);
     	System.out.println();
     	System.out.println("Translation done");
+    }
+
+    @Override 
+    public void exitEqualityExpr(xpathParser.EqualityExprContext ctx) {
+	System.out.println("exitEqualityExpr");
+	if (ctx.getChildCount() > 1)
+	{
+	    this.queryStack.peek().append(" " + ctx.getChild(1) + " "); // operator
+	    this.queryStack.peek().append(this.attributeValue.toString());
+	}
+	System.out.println(this.queryStack.peek());
+    }
+
+    @Override 
+    public void exitRelationalExpr(xpathParser.RelationalExprContext ctx) {
+	System.out.println("exitRelationalExpr");
+	if (ctx.getChildCount() > 1)
+	{
+	    this.queryStack.peek().append(" " + ctx.getChild(1) + " "); // operator
+	    this.queryStack.peek().append(this.attributeValue.toString());
+	}
+	System.out.println(this.queryStack.peek());
+    }
+
+    @Override
+    public void exitPrimaryExpr(xpathParser.PrimaryExprContext ctx) {
+    	//Checking if the child node is leaf node
+    	if (ctx.getChild(0).getChild(0) == null) {
+    		this.attributeValue = ctx.getChild(0);
+    	}
     }
 
     @Override
@@ -78,9 +111,10 @@ public class XPathRingListener extends xpathBaseListener {
     		this.endEdge.push(">)*");
     		this.axis.push("descendant-or-self");
     	} else if (sb.toString().equals("attribute") || sb.toString().equals("@")) {
-    		this.startEdge.push("@");
+    		this.startEdge.push("");
     		this.endEdge.push("");
     		this.axis.push("attribute");
+		this.insideAttributeTest = true;
     	} else if (sb.toString() == null || !sb.toString().isEmpty()) {
     		this.startEdge.push("<");
     		this.endEdge.push(">");
@@ -124,6 +158,7 @@ public class XPathRingListener extends xpathBaseListener {
     public void enterPredicate(xpathParser.PredicateContext ctx) {
 	System.out.println("enterPredicate");
 	this.firstStep = true;
+	this.insideAttributeTest = false;
 	this.queryStack.push(new StringBuilder());
 	System.out.println(this.queryStack.peek());
     }
@@ -132,8 +167,8 @@ public class XPathRingListener extends xpathBaseListener {
     public void exitPredicate(xpathParser.PredicateContext ctx) {
 	System.out.println("exitPredicate");
 	StringBuilder predicate = this.queryStack.pop();
-	if (predicate.charAt(0) == '@') {
-	    //predicate.delete(0, 1);
+	if (this.insideAttributeTest) {
+	    this.insideAttributeTest = false;
 	    this.queryStack.peek().append("[");
 	    this.queryStack.peek().append(predicate.toString());
 	    this.queryStack.peek().append("]");
