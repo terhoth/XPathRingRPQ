@@ -77,7 +77,7 @@ public class XPathRingListener extends xpathBaseListener {
 	    if (this.verbose) System.out.println(this.queryStack.peek());
 	
 	    if (!insideAttributeTest) {
-		String warnMessage = "Relational expressions may only be used to test attributes";
+		String warnMessage = "Relational expressions should begin with an @-prefixed attribute name";
     		output.printWarning(warnMessage);
 	    }
 	}
@@ -99,6 +99,14 @@ public class XPathRingListener extends xpathBaseListener {
     public void exitMultiplicativeExpr(xpathParser.MultiplicativeExprContext ctx) {
 	if (ctx.getChildCount() > 1) {
 	    String warnMessage = "Multiplication has not been implemented";
+    	    output.printWarning(warnMessage);
+	}
+    }
+
+    @Override
+    public void exitUnionExprNoRoot(xpathParser.UnionExprNoRootContext ctx) {
+	if (ctx.getChildCount() > 1) {
+	    String warnMessage = "Union has not been implemented";
     	    output.printWarning(warnMessage);
 	}
     }
@@ -146,7 +154,7 @@ public class XPathRingListener extends xpathBaseListener {
     	StringBuilder sb = new StringBuilder();
     	sb.append(ctx.getChild(0));
 
-    	if (sb.toString().equals("parent")) {
+    	if (sb.toString().equals("parent") || sb.toString().equals("reverse")) {
     		this.axis.push("parent");
     		this.startEdge.push("<%");
     		this.endEdge.push(">");
@@ -185,6 +193,12 @@ public class XPathRingListener extends xpathBaseListener {
 
 	this.queryStack.peek().append(this.startEdge.peek());
 	if (this.verbose) System.out.println(this.queryStack.peek());
+    }
+
+    @Override
+    public void exitAbbreviatedStep(xpathParser.AbbreviatedStepContext ctx) {
+	String warnMessage = "Abbreviated steps have not been implemented";
+    	output.printWarning(warnMessage);
     }
 
     @Override
@@ -284,12 +298,7 @@ public class XPathRingListener extends xpathBaseListener {
 	}	
 	int n_of_steps = (ctx.parent.parent.getChildCount() + 1) / 2;
 	if (this.insideAttributeTest) {
-	    String warnMessage = "Branching is not allowed on attributes";
-    	    output.printWarning(warnMessage);
-	}
-	else if ((this.queryStack.size() == 1 && n_of_steps % 2 == 0) ||
-	         (this.queryStack.size() >  1 && n_of_steps % 2 == 1)) {
-	    String warnMessage = "Branching is not allowed on edges";
+	    String warnMessage = "Attribute tests may not contain predicates";
     	    output.printWarning(warnMessage);
 	}
 	this.firstStep = true;
