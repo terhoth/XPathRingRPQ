@@ -155,14 +155,17 @@ public class XPathRingListener extends xpathBaseListener {
 		if (this.queryStack.size() == 1) {
 			// this is the end of the main query
 			int n_of_steps = (ctx.getChildCount() + 1) / 2;
-			if (n_of_steps % 2 == 0 || this.deletedStep) {
+			if (n_of_steps <= 1) {
+				String warnMessage = "The query must contain at least one edge!";
+				output.printWarning(warnMessage);
+			} else if (n_of_steps % 2 == 0 || this.deletedStep) {
 				// no vertex endpoint specified
 				this.queryStack.peek().append(" ?y");
 			} else {
 				// put a space before the last vertex, and remove ¤
 				int i = this.queryStack.peek().lastIndexOf("/<¤");
 				this.queryStack.peek().delete(i, i+3);
-			this.queryStack.peek().insert(i, " <");
+				this.queryStack.peek().insert(i, " <");
 			}
 		}
 		if (this.verbose) System.out.println(this.queryStack.peek());
