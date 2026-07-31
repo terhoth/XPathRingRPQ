@@ -49,6 +49,25 @@ public class XPathRingListener extends xpathBaseListener {
 		System.out.println("Translation done");
 	}
 
+	@Override
+	public void exitOrExpr(xpathParser.OrExprContext ctx) {
+		if (ctx.getChildCount() > 1) {
+			String warnMessage = "Logical OR has not been implemented";
+			output.printWarning(warnMessage);
+		}
+	}
+
+	@Override 
+	public void enterEqualityExpr(xpathParser.EqualityExprContext ctx) {
+		if (ctx.parent.getChildCount() > 1) {
+			// separate and-combined expressions into different brackets
+			// e.g. [@attr1 = 1 and @attr2 = 2] --> [@attr1 = 1][@attr2 = 2]
+			if (this.verbose) System.out.println("enterEqualityExpr");
+			this.queryStack.peek().append("][");
+			this.insideAttributeTest = false;
+			if (this.verbose) System.out.println(this.queryStack.peek());
+		}
+	}
 
 	@Override 
 	public void exitEqualityExpr(xpathParser.EqualityExprContext ctx) {
