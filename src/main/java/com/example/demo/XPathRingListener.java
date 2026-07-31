@@ -162,8 +162,8 @@ public class XPathRingListener extends xpathBaseListener {
 				// no vertex endpoint specified
 				this.queryStack.peek().append(" ?y");
 			} else {
-				// put a space before the last vertex, and remove ¤
-				int i = this.queryStack.peek().lastIndexOf("/<¤");
+				// put a space before the last vertex, and remove &
+				int i = this.queryStack.peek().lastIndexOf("/<&");
 				this.queryStack.peek().delete(i, i+3);
 				this.queryStack.peek().insert(i, " <");
 			}
@@ -249,19 +249,19 @@ public class XPathRingListener extends xpathBaseListener {
 				String warnMessage = "The first step should contain only a vertex name (or wildcard vertex)";
 				output.printWarning(warnMessage);
 			}
-			if (this.queryStack.peek().toString().equals("<¤>")) {
+			if (this.queryStack.peek().toString().equals("<&>")) {
 				// replace unspecified start vertex with variable
 				this.queryStack.pop();
 				this.queryStack.push(new StringBuilder("?x"));
 			} else {
-				// remove ¤ from constant start vertex
+				// remove & from constant start vertex
 				this.queryStack.peek().deleteCharAt(1); 
 			}
 			this.queryStack.peek().append(" ");
 
 		} else {
 			// remove the step if it was just a nameless vertex
-			String uselessStep = "/" + this.startEdge.peek() + "¤" + this.endEdge.peek();
+			String uselessStep = "/" + this.startEdge.peek() + "&" + this.endEdge.peek();
 			int i = this.queryStack.peek().indexOf(uselessStep);
 			if (i != -1) {
 				this.queryStack.peek().delete(i, this.queryStack.peek().length());
@@ -298,7 +298,7 @@ public class XPathRingListener extends xpathBaseListener {
 		// main query begins with a vertex; subqueries (=predicates) begin with an edge
 		if ((this.queryStack.size() == 1 && n_of_steps % 2 == 1) ||
 			(this.queryStack.size() >  1 && n_of_steps % 2 == 0)) {
-			this.queryStack.peek().append('¤');
+			this.queryStack.peek().append('&');
 		}
 		this.queryStack.peek().append(this.nCName);
 		if (this.verbose) System.out.println(this.queryStack.peek());
