@@ -61,17 +61,17 @@ public class HelloController {
 			System.out.println(query);
 
             // create a lexer that feeds off of input CharStream
-            xpathLexer lexer = new xpathLexer(input);
+            xpathRpqLexer lexer = new xpathRpqLexer(input);
 
             // create a buffer of tokens pulled from the lexer
             CommonTokenStream tokens = new CommonTokenStream(lexer);
 
             // create a parser that feeds off the tokens buffer
-            xpathParser parser = new xpathParser(tokens);
+            xpathRpqParser parser = new xpathRpqParser(tokens);
 
 			StringBuilder sb = new StringBuilder();
 
-			XPathRingListener mylistener = new XPathRingListener();
+			XPathRpqListener mylistener = new XPathRpqListener();
 			parser.addParseListener(mylistener);
             ParseTree tree = parser.main();    // begin parsing at rule main
             
@@ -101,18 +101,18 @@ public class HelloController {
 			System.out.println(query);
 
             // create a lexer that feeds off of input CharStream
-            xpathLexer lexer = new xpathLexer(input);
+            xpathRpqLexer lexer = new xpathRpqLexer(input);
 
             // create a buffer of tokens pulled from the lexer
             CommonTokenStream tokens = new CommonTokenStream(lexer);
 
             // create a parser that feeds off the tokens buffer
-            xpathParser parser = new xpathParser(tokens);
+            xpathRpqParser parser = new xpathRpqParser(tokens);
 
 			StringBuilder sb = new StringBuilder();
             String cypQ = "";
 
-				XPathRingListener mylistener = new XPathRingListener();
+				XPathRpqListener mylistener = new XPathRpqListener();
 				parser.addParseListener(mylistener);
                 ParseTree tree = parser.main();    // begin parsing at rule main
             
