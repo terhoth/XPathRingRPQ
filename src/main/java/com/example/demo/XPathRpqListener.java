@@ -267,13 +267,14 @@ public class XPathRpqListener extends xpathRpqBaseListener {
 				this.queryStack.peek().delete(i, this.queryStack.peek().length());
 				this.deletedStep = true;
 			}
-			// warn about nameless edges
-			uselessStep = "/" + this.startEdge.peek() + this.endEdge.peek();
-			i = this.queryStack.peek().indexOf(uselessStep);
+			// add underscore to nameless edges (also remove needless reversion)
+			i = this.queryStack.peek().indexOf("<>");
 			if (i != -1) {
-				String warnMessage = "Nameless edges can be costly in evaluation. "
-					+ "Besides, they have not been implemented yet!";
-				output.printWarning(warnMessage);
+				this.queryStack.peek().replace(i, i+2, "<_>");
+			}
+			i = this.queryStack.peek().indexOf("<%>"); 
+			if (i != -1) {
+				this.queryStack.peek().replace(i, i+3, "<_>");
 			}
 		}
 
